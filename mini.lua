@@ -46,6 +46,11 @@ local function sortKeys(tbl)
   return keys
 end
 
+--- @alias IniTable { [string]: { [string]: any } }
+
+--- Parse a string representing an INI configuration into a Lua table.
+--- @param input string a string that represents an INI configuration
+--- @return IniTable # a Lua table representing the parsed configuration
 function mini.parse(input)
   local lines = split(trim(input), "\r?\n")
   local data = {}
@@ -80,6 +85,9 @@ function mini.parse(input)
   return data
 end
 
+--- Output a string that represents an INI configuration from the given Lua table
+--- @param input IniTable a Lua table that represents an INI configuration
+--- @return string # a string that represents the given INI configuration
 function mini.output(input)
   local function processSection(name, values)
     local lines = {}
