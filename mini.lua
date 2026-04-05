@@ -70,7 +70,7 @@ function mini.output(input)
     if name then
       table.insert(lines, "[" .. name .. "]")
     end
-    
+
     for key, value in pairs(values) do
       if type(key) ~= "string" then
         error("Invalid key '" .. key .."'. Keys must be strings.")
