@@ -34,6 +34,18 @@ local function trim(str)
   return string.match(str, "^%s*(.-)%s*$")
 end
 
+local function sortKeys(tbl)
+  local keys = {}
+
+  for key, _ in pairs(tbl) do
+    table.insert(keys, key)
+  end
+
+  table.sort(keys)
+
+  return keys
+end
+
 function mini.parse(input)
   local lines = split(trim(input), "\r?\n")
   local data = {}
@@ -41,7 +53,7 @@ function mini.parse(input)
 
   for _, line in ipairs(lines) do
     -- remove comments
-    line = trim(split(line, ";")[1])
+    line = trim(line:gsub(";.*", ""))
 
     local section = string.match(line, "^%[(%w+)%]$")
     if section then
@@ -76,10 +88,14 @@ function mini.output(input)
       table.insert(lines, "[" .. name .. "]")
     end
 
-    for key, value in pairs(values) do
+    local sortedKeys = sortKeys(values)
+
+    for _, key in ipairs(sortedKeys) do
       if type(key) ~= "string" then
         error("Invalid key '" .. key .."'. Keys must be strings.")
       end
+
+      local value = values[key]
 
       if type(value) == "function" then
         error("Invalid value for key '" .. key .. "'. Values cannot be functions.")
@@ -97,13 +113,16 @@ function mini.output(input)
   for key, value in pairs(input) do
     if type(value) == "table" then
       sections[key] = value
+    else
+      error("Invalid value for section '" .. key .. "'. Section values must be tables.")
     end
   end
 
+  local sortedKeys = sortKeys(sections)
   local output = {}
 
-  for key, value in pairs(sections) do
-    table.insert(output, processSection(key, value))
+  for _, key in ipairs(sortedKeys) do
+    table.insert(output, processSection(key, sections[key]))
   end
 
   return table.concat(output, "\n\n")
