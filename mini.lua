@@ -37,7 +37,7 @@ end
 function mini.parse(input)
   local lines = split(trim(input), "\r?\n")
   local data = {}
-  local currentSection = data
+  local currentSection = nil
 
   for _, line in ipairs(lines) do
     -- remove comments
@@ -48,13 +48,18 @@ function mini.parse(input)
       if not data[section] then
         data[section] = {}
       end
-      currentSection = data[section]
+      currentSection = section
     elseif string.match(line, "^%w+%s*=%s*.+$") then
       local kv = split(line, "=")
       local key = trim(kv[1])
       local value = trim(kv[2])
 
-      currentSection[key] = value
+      if not currentSection then
+        error("Error: '" .. key .. "' has no section.")
+      end
+
+
+      data[currentSection][key] = value
     elseif #line > 0 then
       error("Invalid line: " .. line)
     end
@@ -64,7 +69,7 @@ function mini.parse(input)
 end
 
 function mini.output(input)
-  local function processSection(name, values, topLevel)
+  local function processSection(name, values)
     local lines = {}
 
     if name then
@@ -79,9 +84,7 @@ function mini.output(input)
       if type(value) == "function" then
         error("Invalid value for key '" .. key .. "'. Values cannot be functions.")
       elseif type(value) == "table" then
-        if not topLevel then
-          error("Invalid value for key '" .. key .. "'. Sections cannot be nested.")
-        end
+        error("Invalid value for key '" .. key .. "'. Sections cannot be nested.")
       else
         table.insert(lines, key .. " = " .. value)
       end
@@ -98,10 +101,9 @@ function mini.output(input)
   end
 
   local output = {}
-  table.insert(output, processSection(nil, input, true))
 
   for key, value in pairs(sections) do
-    table.insert(output, processSection(key, value, false))
+    table.insert(output, processSection(key, value))
   end
 
   return table.concat(output, "\n\n")
