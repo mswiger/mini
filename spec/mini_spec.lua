@@ -24,6 +24,8 @@ describe("mini", function ()
         right = key:right button:dpright
       ]]
 
+      local output, error = mini.parse(ini)
+
       assert.are_same({
         graphics = {
           width = "1024",
@@ -34,10 +36,12 @@ describe("mini", function ()
           left = "key:left button:dpleft",
           right = "key:right button:dpright",
         },
-      }, mini.parse(ini))
+      }, output)
+
+      assert.is_nil(error)
     end)
 
-    it("raises an error when value definition has no section", function ()
+    it("returns an error when value definition has no section", function ()
       local ini = [[
         x = 1
 
@@ -45,10 +49,9 @@ describe("mini", function ()
         override = false
       ]]
 
-      assert.has_error(
-        function() mini.parse(ini) end,
-        "Error: 'x' has no section."
-      )
+      local output, error = mini.parse(ini)
+      assert.are.equal(nil, output)
+      assert.are.equal("Error: 'x' has no section.", error)
     end)
 
     it("raises an error with invalid section definition", function ()
@@ -57,10 +60,9 @@ describe("mini", function ()
         override = false
       ]]
 
-      assert.has_error(
-        function() mini.parse(ini) end,
-        "Invalid line: [general"
-      )
+      local output, error = mini.parse(ini)
+      assert.are.equal(nil, output)
+      assert.are.equal("Invalid line: [general", error)
     end)
 
     it("raises an error with invalid value definition", function ()
@@ -69,10 +71,9 @@ describe("mini", function ()
         override
       ]]
 
-      assert.has_error(
-        function() mini.parse(ini) end,
-        "Invalid line: override"
-      )
+      local output, error = mini.parse(ini)
+      assert.are.equal(nil, output)
+      assert.are.equal("Invalid line: override", error)
     end)
   end)
 
@@ -90,7 +91,7 @@ describe("mini", function ()
         },
       }
 
-      local output =
+      local expected =
         "[graphics]\n" ..
         "height = 768\n" ..
         "vsync = true\n" ..
@@ -99,17 +100,19 @@ describe("mini", function ()
         "left = key:left button:dpleft\n" ..
         "right = key:right button:dpright"
 
-      assert.are.equal(output, mini.output(config))
+      local output, error = mini.output(config)
+      assert.are.equal(expected, output)
+      assert.is_nil(error)
     end)
 
     it("raises an error for invalid section value", function ()
       local config = {
         section = "value",
       }
-      assert.has_error(
-        function() mini.output(config) end,
-        "Invalid value for section 'section'. Section values must be tables."
-      )
+
+      local output, error = mini.output(config)
+      assert.are.equal(nil, output)
+      assert.are.equal("Invalid value for section 'section'. Section values must be tables.", error)
     end)
 
     it("raises an error when key is not string", function ()
@@ -118,10 +121,10 @@ describe("mini", function ()
           [1] = "value",
         }
       }
-      assert.has_error(
-        function() mini.output(config) end,
-        "Invalid key '1'. Keys must be strings."
-      )
+
+      local output, error = mini.output(config)
+      assert.are.equal(nil, output)
+      assert.are.equal("Invalid key '1'. Keys must be strings.", error)
     end)
 
     it("raises an error when value is defined as function", function ()
@@ -130,10 +133,10 @@ describe("mini", function ()
           key = function() end
         }
       }
-      assert.has_error(
-        function() mini.output(config) end,
-        "Invalid value for key 'key'. Values cannot be functions."
-      )
+
+      local output, error = mini.output(config)
+      assert.are.equal(nil, output)
+      assert.are.equal("Invalid value for key 'key'. Values cannot be functions.", error)
     end)
 
     it("raises an error when value is defined as a table", function ()
@@ -142,10 +145,10 @@ describe("mini", function ()
           key = {}
         }
       }
-      assert.has_error(
-        function() mini.output(config) end,
-        "Invalid value for key 'key'. Sections cannot be nested."
-      )
+
+      local output, error = mini.output(config)
+      assert.are.equal(nil, output)
+      assert.are.equal("Invalid value for key 'key'. Sections cannot be nested.", error)
     end)
   end)
 end)

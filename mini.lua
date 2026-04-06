@@ -50,7 +50,8 @@ end
 
 --- Parse a string representing an INI configuration into a Lua table.
 --- @param input string a string that represents an INI configuration
---- @return IniTable # a Lua table representing the parsed configuration
+--- @return IniTable? # a Lua table representing the parsed configuration
+--- @return string? # error message if present
 function mini.parse(input)
   local lines = split(trim(input), "\r?\n")
   local data = {}
@@ -72,13 +73,13 @@ function mini.parse(input)
       local value = trim(kv[2])
 
       if not currentSection then
-        error("Error: '" .. key .. "' has no section.")
+        return nil, "Error: '" .. key .. "' has no section."
       end
 
 
       data[currentSection][key] = value
     elseif #line > 0 then
-      error("Invalid line: " .. line)
+      return nil, "Invalid line: " .. line
     end
   end
 
@@ -87,7 +88,8 @@ end
 
 --- Output a string that represents an INI configuration from the given Lua table
 --- @param input IniTable a Lua table that represents an INI configuration
---- @return string # a string that represents the given INI configuration
+--- @return string? # a string that represents the given INI configuration
+--- @return string? # error message if present
 function mini.output(input)
   local function processSection(name, values)
     local lines = {}
@@ -100,15 +102,15 @@ function mini.output(input)
 
     for _, key in ipairs(sortedKeys) do
       if type(key) ~= "string" then
-        error("Invalid key '" .. key .."'. Keys must be strings.")
+        return nil, "Invalid key '" .. key .."'. Keys must be strings."
       end
 
       local value = values[key]
 
       if type(value) == "function" then
-        error("Invalid value for key '" .. key .. "'. Values cannot be functions.")
+        return nil, "Invalid value for key '" .. key .. "'. Values cannot be functions."
       elseif type(value) == "table" then
-        error("Invalid value for key '" .. key .. "'. Sections cannot be nested.")
+        return nil, "Invalid value for key '" .. key .. "'. Sections cannot be nested."
       else
         table.insert(lines, key .. " = " .. value)
       end
@@ -122,7 +124,7 @@ function mini.output(input)
     if type(value) == "table" then
       sections[key] = value
     else
-      error("Invalid value for section '" .. key .. "'. Section values must be tables.")
+      return nil, "Invalid value for section '" .. key .. "'. Section values must be tables."
     end
   end
 
@@ -130,7 +132,11 @@ function mini.output(input)
   local output = {}
 
   for _, key in ipairs(sortedKeys) do
-    table.insert(output, processSection(key, sections[key]))
+    local processed, error = processSection(key, sections[key])
+    if error then
+      return nil, error
+    end
+    table.insert(output, processed)
   end
 
   return table.concat(output, "\n\n")
